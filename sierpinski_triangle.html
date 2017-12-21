@@ -1,0 +1,31 @@
+<html>
+<head>
+<script src="Pencil.js"></script>
+</head>
+<body>
+<canvas id="myCanvas">
+</canvas>
+<script>
+var divisor = 2;
+function drawSierpinskiTriangle(myPencil, pts) {
+	var targets = [[0, 0], [W, 0], [W/2, W * Math.sin(60 * Math.PI / 180)]];
+	for (var i = 0; i < pts; i++) {
+	    var target = targets[Math.floor(Math.random() * 3)];
+        var nextX = (myPencil.x + target[0]) / divisor;
+        var nextY = (myPencil.y + target[1]) / divisor;
+        myPencil.moveTo(nextX, nextY);
+        myPencil.drawPoint();
+	}
+    new Promise(r => setTimeout(r, 0))
+    .then(() => {
+    	drawSierpinskiTriangle(myPencil, pts);
+    });
+}
+var W = 1000;
+var H = 1000;
+var myPencil = new Pencil(document.getElementById("myCanvas"), W, H, 0);
+drawSierpinskiTriangle(myPencil, 1000);
+
+</script>
+</body>
+</html>

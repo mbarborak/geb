@@ -1,0 +1,21 @@
+<html>
+<head>
+</head>
+<body>
+<!--     <button id="roll">Roll</button> -->
+    <div id="die" style="font-size:40em;">0</div>
+    <script>
+    var ct = 0;
+    var die = document.getElementById("die");
+//    var roll = document.getElementById("roll");
+    die.addEventListener("click", evt => {
+    	var value = 1 + Math.floor(Math.random() * 6);
+    	die.innerHTML = value;
+    	die.style.color = ct % 2 == 0 ? "red" : "violet";
+    	ct++;
+    });
+    	
+    
+    </script>
+</body>
+</html>

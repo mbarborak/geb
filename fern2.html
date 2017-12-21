@@ -1,0 +1,205 @@
+<html>
+<head>
+<script src="http://cdnjs.cloudflare.com/ajax/libs/mathjs/3.10.0/math.js"></script>
+<script src="Pencil.js"></script>
+</head>
+<body>
+<canvas id="myCanvas">
+</canvas>
+<script>
+var W = 1000;
+var H = 1000;
+var myPencil = new Pencil(document.getElementById("myCanvas"), W, H, 0);
+myPencil.clear();
+myPencil.clear("rgba(245,222,179, .3)");
+
+class Transform {
+	constructor(x, y, w, h, a) {
+		// Always translate, scale then rotate.
+        var translate = math.matrix([
+        		[1, 0, x], 
+        		[0, 1, y], 
+        		[0, 0, 1]]);
+        var scale = math.matrix([
+        		[w, 0, 0], 
+        		[0, h, 0], 
+        		[0, 0, 1]]);
+        var rotate = math.matrix([
+                [Math.cos(a), -Math.sin(a), 0], 
+                [Math.sin(a), Math.cos(a), 0], 
+                [0, 0, 1]]);
+        this.matrix = math.multiply(math.multiply(translate, rotate), scale);
+	}
+	
+	doPt(x, y) {
+		var result = math.multiply(this.matrix, [x, y, 1]);
+		return [result.get([0]), result.get([1])];
+	}
+	
+	doVec(v) {
+		return this.doPt(v[0], v[1]);
+	}
+	
+	multiply(matrix) {
+		this.matrix = math.multiply(this.matrix, matrix);
+	}
+}
+
+class Ray {
+	constructor(x0, y0, a, l) {
+		this.x1 = x0 + Math.cos(a) * l;
+		this.y1 = y0 + Math.sin(a) * l;
+	}
+	
+	get pt() {
+		return [this.x1, this.y1];
+	}
+}
+	
+function drawFern(myPencil, transforms, pt, pts, turns, resolve) {
+    if (turns == 0) {
+        resolve();
+        return;
+    }
+    
+    for (var i = 0; i < pts; i++) {
+        var r = Math.random();
+        var pTotal = 0;
+        var entry = null;
+        transforms.forEach(e => {
+            if (entry == null) {
+                if (r <= pTotal + e.p) {
+                    entry = e;
+                }
+                pTotal += e.p;
+            }
+        });
+//        entry = transforms[ndx++];
+//        ndx = ndx % transforms.length;
+        var tmp = pt.slice();
+        pt = entry.t.doVec(pt);
+        var drawPt = viewTransform.doVec(pt);
+        myPencil.moveTo(drawPt[0], drawPt[1]);
+        myPencil.drawPoint("rgba(80,118,66," + alpha + ")", .5);
+    }
+    new Promise(r => setTimeout(r, 0))
+    .then(() => {
+        drawFern(myPencil, transforms, pt, pts, --turns, resolve);
+    });
+}
+
+function test(myPencil, transforms) {
+    transforms.forEach(e => {
+        var first;
+        var pts = [[0,0], [0,1], [1,1], [1,0]];
+        for (var i = 0; i < 4; i++) {
+            var pt = pts[i];
+            pt = e.t.doVec(pt);
+            var drawPt = viewTransform.doVec(pt);
+            if (i == 0) {
+                first = drawPt;
+                myPencil.moveTo(drawPt[0], drawPt[1]);
+            } else {
+                myPencil.lineTo(drawPt[0], drawPt[1], e.c);
+            }
+        }
+        myPencil.lineTo(first[0], first[1], e.c);
+        myPencil.drawPoint(e.c, 3);
+    });
+}
+
+var viewTransform;
+var alpha;
+
+function fern(iteration) {
+	var resolve;
+	var promise = new Promise(r => resolve = r);
+	
+	var noise = [];
+	for (var i = 0; i < 20; i++) {
+		var magnitude = .075;
+		noise[i] = 1 + (2 * Math.random() * magnitude) - magnitude;
+	}
+
+	viewTransform = new Transform(document.body.clientWidth * (.1 + Math.random() * .8), 0, 80, 80, 0);
+    if (Math.random() > 0.5) {
+    	viewTransform.multiply(math.matrix([[-1, 0, 0], [0, 1, 0], [0, 0, 1]]));
+    }
+    
+    alpha = .1 * iteration;
+
+
+	var transforms = [
+	    {
+	    	name: "stem",
+	        w: 1,
+	        t: new Transform(0, 0, 0, .16 * noise[0], 0),
+	        c: "red"
+	    },
+	    {
+	    	name: "main vein",
+	        w: 85,
+	        t:  (() => {
+	            return new Transform(0, 1.6 * noise[1], .87 * noise[2], .87 * noise[3], - .025 * Math.PI * noise[4]);
+	        })(),
+	        c: "green"
+	    },
+	    /*
+        {
+            name: "main vein",
+            w: 30,
+            t:  (() => {
+                var t = new Transform(0, 1.2 * noise[1], .5 * noise[2], .5 * noise[3], - .1 * Math.PI * noise[4]);
+             //   t.multiply(math.matrix([[-1, 0, 0], [0, 1, 0], [0, 0, 1]]));
+                return t;
+            })(),
+            c: "green"
+        },
+        */
+	    {
+	    	name: "left sub vein",
+	        w: 7,
+	        t:  (() => {
+	            return new Transform(0, 1.6 * noise[5], .3 * noise[6], .35 * noise[7], .27 * Math.PI * noise[8]);
+	        })(),
+	        c: "blue"
+	    },
+	    {
+	        name: "right sub vein",
+	        w: 7,
+	        t:  (() => {
+	            var t = new Transform(0, .4 * noise[9], .25 * noise[10], .4 * noise[11], .65 * Math.PI * noise[12]);
+	            t.multiply(math.matrix([[1, 0, 0], [0, -1, 0], [0, 0, 1]]));
+	            return t;
+	        })(),
+	        c: "black"
+	    }
+	];
+	
+	var total = transforms.reduce((a, b) => { return { w: a.w + b.w } }).w;
+	transforms.forEach(e => e.p = e.w / total);
+	
+	var pt = [0, 0]
+	var ndx = 0;
+	test(myPencil, transforms, 100);
+	drawFern(myPencil, transforms, pt, 1000, 300, resolve);
+	
+	return promise;
+}
+
+function runner(ct) {
+	if (ct > 0) {
+		fern(10 - ct)
+		.then(() => new Promise(r => setTimeout(r, 5000)))
+		.then(() => {
+//			myPencil.clear();
+//		    myPencil.clear("rgba(245,222,179, .3)");
+			runner(--ct);
+		});
+	}
+}
+
+runner(9);
+</script>
+</body>
+</html>

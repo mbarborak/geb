@@ -1,0 +1,124 @@
+<html>
+<head>
+<script src="http://cdnjs.cloudflare.com/ajax/libs/mathjs/3.10.0/math.js"></script>
+<script src="Pencil.js"></script>
+</head>
+<body>
+<canvas id="myCanvas">
+</canvas>
+<script>
+var W = 1000;
+var H = 1000;
+var myPencil = new Pencil(document.getElementById("myCanvas"), W, H, 0);
+
+class Transform {
+	constructor(a, b, c, d, e, f) {
+		this.matrix = math.matrix([
+        		[a, b, e], 
+        		[c, d, f], 
+        		[0, 0, 1]]);
+	}
+	
+	doPt(x, y) {
+		var result = math.multiply(this.matrix, [x, y, 1]);
+		return [result.get([0]), result.get([1])];
+	}
+	
+	doVec(v) {
+		return this.doPt(v[0], v[1]);
+	}
+	
+	multiply(transform) {
+		this.matrix = math.multiply(this.matrix, transform.matrix);
+	}
+}
+
+var W1 = 800;
+var H1 = 800;
+
+// From unit square to main rect.
+var transformInitial = new Transform(W1, 0, 0, H1, 50, 50);
+
+var transforms = [
+    {
+        w: 0,
+        t: transformInitial,
+        c: "gold"
+    },
+    {
+        w: .01,
+        t: new Transform(0, 0, 0, .16, 0, 0),
+        c: "red"
+    },
+    {
+        w: .85,
+        t: new Transform(.85, .04, -.04, .85, 0, 1.6),
+        c: "green"
+    },
+    {
+        w: 0.07,
+        t: new Transform(0.20, -0.26, 0.23, 0.22, 0, 1.60),
+        c: "blue"
+    },
+    {
+        w: 0.07,
+        t: new Transform(-0.15, 0.28, 0.26, 0.24, 0, 0.44),
+        c: "black"
+    }
+];
+
+var total = transforms.reduce((a, b) => { return { w: a.w + b.w } }).w;
+transforms.forEach(e => e.p = e.w / total);
+
+var pt = [0, 0];
+//test(myPencil);
+drawFern(myPencil, 1000, 1000);
+
+function drawFern(myPencil, pts, turns) {
+	if (turns == 0) return;
+	
+    for (var i = 0; i < pts; i++) {
+        var r = Math.random();
+        var pTotal = 0;
+        var entry = null;
+        transforms.forEach(e => {
+            if (entry == null) {
+                if (r <= pTotal + e.p) {
+                	entry = e;
+                }
+                pTotal += e.p;
+            }
+        });
+        pt = entry.t.doVec(pt);
+        myPencil.moveTo(pt[0] * 80 + 500, pt[1] * 80);
+        myPencil.drawPoint("rgba(80,118,66,.5)" /*entry.c*/, .5);
+    }
+    new Promise(r => setTimeout(r, 0))
+    .then(() => {
+    	drawFern(myPencil, pts, --turns);
+    });
+}
+
+function test(myPencil) {
+    transforms.forEach(e => {
+        var first;
+        var pts = [[0,0], [0,1], [1,1], [1,0]];
+        for (var i = 0; i < 4; i++) {
+            var pt = pts[i];
+            pt = e.t.doVec(pt);
+            var drawPt = [pt[0] * 80 + 500, pt[1] * 80];
+            if (i == 0) {
+                first = drawPt;
+                myPencil.moveTo(drawPt[0], drawPt[1]);
+            } else {
+                myPencil.lineTo(drawPt[0], drawPt[1], e.c);
+            }
+        }
+        myPencil.lineTo(first[0], first[1], e.c);
+        myPencil.drawPoint(e.c, 3);
+    });
+}
+
+</script>
+</body>
+</html>

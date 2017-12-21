@@ -1,0 +1,44 @@
+<html>
+<head>
+<script src="http://cdnjs.cloudflare.com/ajax/libs/mathjs/3.10.0/math.js"></script>
+<script src="Pencil.js"></script>
+</head>
+<body>
+<canvas id="myCanvas">
+</canvas>
+<script>
+var W = 1500;
+var H = 1000;
+var myPencil = new Pencil(document.getElementById("myCanvas"), W, H, 0);
+myPencil.clear();
+
+var c = math.complex(-1, 0); 
+var z = math.complex(0, 0);
+
+function drawPts(index, W, H, ct) {
+	for (var i = index; i < index + ct; i++) {
+		var px = i % W;
+		var py = Math.floor(i / H);
+		var c = math.complex(px / W * 3.5 - 2.5, py / H * 2 - 1); 
+		var z = math.complex(0, 0);
+		var maxIterations = 200;
+		for (var j = 0; j < maxIterations && z.toPolar().r < 4; j++) { 
+			 z = math.add(math.multiply(z, z), c);
+		}
+        myPencil.moveTo(px, py);
+        myPencil.drawPoint("rgba(0,0,0," + j / maxIterations + ")" /*entry.c*/, 2);
+//        myPencil.drawPoint("rgba(80,118,66," + j / maxIterations + ")" /*entry.c*/, 1);
+	}
+}
+
+var index = 0;
+function runner() {
+    drawPts(index, W, H, 1000);
+    index += 1000;
+    new Promise(r => setTimeout(r, 0)).then(() => runner());
+}
+
+runner();
+</script>
+</body>
+</html>

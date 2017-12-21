@@ -1,0 +1,46 @@
+<html>
+<head>
+<script src="Pencil.js"></script>
+</head>
+<body>
+<canvas id="myCanvas">
+</canvas>
+<script>
+function drawKochCurve(myPencil, level, sideLength) {
+  if (level < 1) {
+     myPencil.forward(sideLength);
+  } else {
+    drawKochCurve(myPencil, level - 1, (sideLength)/3);
+    myPencil.turn(-60);
+    drawKochCurve(myPencil, level - 1, (sideLength)/3);
+    myPencil.turn(120);
+    drawKochCurve(myPencil, level - 1, (sideLength)/3);
+    myPencil.turn(-60);   
+    drawKochCurve(myPencil, level - 1, (sideLength)/3);
+  }
+}
+
+function drawKochTriangle(myPencil) {
+	myPencil.moveTo(W / 2, H / 6);
+	myPencil.turnTo(-60);
+	for (var i = 0; i < 3; i++) {
+		myPencil.turn(120);
+		drawKochCurve(myPencil, 4, W / 2);
+	}
+	myPencil.lineTo(W / 2, H / 6);
+	myPencil.fill("rgba(20, 80, 30, .5)");
+	new Promise(r => setTimeout(r, 1000))
+	.then(() => {
+		myPencil.clear();
+		myPencil.randomFactor += Math.random() - .5;
+		drawKochTriangle(myPencil);
+	});
+}
+var W = 1000;
+var H = 1000;
+var myPencil = new Pencil(document.getElementById("myCanvas"), W, H, 0);
+drawKochTriangle(myPencil);
+
+</script>
+</body>
+</html>
